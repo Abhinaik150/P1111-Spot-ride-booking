@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spot Booking | The Future of Indian Ride-Hailing</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- Responsive CSS Variables & Resets --- */
+        :root {
+            --primary: #00e676; 
+            --primary-dark: #00c853; 
+            --accent: #00f2fe; 
+            --accent-orange: #ff3d00; 
+            --accent-driver: #ff00aa;
+            --bg-dark: #0d1117; 
+            --bg-panel: #161b22; 
+            --text-light: #ffffff;
+            --text-muted: #8b949e;
+            --nav-bg: rgba(13, 17, 23, 0.85); 
+            
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --ease: cubic-bezier(0.25, 1, 0.5, 1);
+            --transition: all 0.6s var(--ease);
+
+            /* Timeline Scaling */
+            --box-size: 260px;
+            --scale-idle: 0.65;
+            --scale-active: 1.3;
+            --margin-idle: -40px;
+            --margin-active: 50px;
+            --line-width: 80px;
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --box-size: 240px; --scale-idle: 0.85; --scale-active: 1.1;
+                --margin-idle: -15px; --margin-active: 20px; --line-width: 40px;
+            }
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--font-main); }
+        html { scroll-behavior: smooth; background-color: var(--bg-dark); color: var(--text-light); }
+        body { line-height: 1.6; overflow-x: hidden; }
+
+        .icon { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .gradient-text { background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; }
+
+        /* --- SPA Page Routing CSS --- */
+        .page-view { display: none; animation: fadeIn 0.4s ease forwards; }
+        .page-view.active-page { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Sticky Navigation --- */
+        nav {
+            position: fixed; top: 0; width: 100%; background-color: var(--nav-bg);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 1rem 5%; z-index: 1000; transition: var(--transition);
+        }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--text-light); text-decoration: none; display: flex; align-items: center; gap: 10px; letter-spacing: -0.02em; cursor: pointer;}
+        .logo .icon { color: var(--primary); width: 28px; height: 28px; }
+        
+        .nav-links { display: flex; gap: 1.5rem; align-items: center; transition: all 0.3s ease; }
+        nav a.nav-link { cursor: pointer; text-decoration: none; color: var(--text-muted); font-weight: 500; font-size: 0.95rem; padding: 0.5rem 0; position: relative; transition: var(--transition); }
+        nav a.nav-link:hover, nav a.nav-link.active { color: var(--text-light); }
+        nav a.nav-link::after { content: ''; position: absolute; bottom: 0; left: 50%; width: 0; height: 2px; background: var(--primary); transition: var(--transition); transform: translateX(-50%); }
+        nav a.nav-link:hover::after, nav a.nav-link.active::after { width: 100%; }
+
+        .menu-toggle { display: none; flex-direction: column; cursor: pointer; gap: 6px; z-index: 1100; }
+        .menu-toggle .bar { height: 3px; width: 25px; background-color: var(--text-light); border-radius: 3px; transition: all 0.3s ease; }
+
+        @media (max-width: 768px) {
+            .menu-toggle { display: flex; }
+            .nav-links { display: none; width: 100%; flex-direction: column; text-align: center; gap: 1rem; padding-top: 1.5rem; padding-bottom: 0.5rem; }
+            .nav-links.active-menu { display: flex; animation: fadeDown 0.3s ease forwards; }
+            .menu-toggle.is-active .bar:nth-child(2) { opacity: 0; }
+            .menu-toggle.is-active .bar:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+            .menu-toggle.is-active .bar:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+        }
+
+        /* --- Global Sections --- */
+        .section-padding { padding: 120px 5%; }
+        .centered-text { text-align: center; max-width: 800px; margin: 0 auto 3rem; position: relative; z-index: 2;}
+
+        /* --- Hero Section --- */
+        .hero { position: relative; min-height: 100vh; display: flex; align-items: center; padding: 120px 5% 40px; text-align: center; overflow: hidden; background: radial-gradient(circle at 50% 0%, rgba(0, 230, 118, 0.1) 0%, transparent 60%); }
+        @media (max-width: 768px) { .hero { padding-top: 160px; } }
+        .hero-content { max-width: 900px; margin: 0 auto; position: relative; z-index: 10; }
+        .tagline { display: inline-block; padding: 6px 16px; background: rgba(0, 230, 118, 0.1); color: var(--primary); border-radius: 50px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem; text-transform: uppercase; }
+        .hero h1 { font-size: clamp(2.5rem, 5vw, 4.5rem); line-height: 1.1; margin-bottom: 1.5rem; font-weight: 800; letter-spacing: -0.03em; }
+        .hero p { font-size: clamp(1.1rem, 2vw, 1.3rem); color: var(--text-muted); max-width: 700px; margin: 0 auto 3rem; }
+
+        /* --- Problem Section --- */
+        .problem-grid { display: grid; gap: 4rem; align-items: center; max-width: 1200px; margin: 0 auto; }
+        @media (min-width: 992px) { .problem-grid { grid-template-columns: 1fr 1fr; } }
+        .text-content h2 { font-size: clamp(2rem, 4vw, 3rem); margin-bottom: 1.5rem; line-height: 1.2; letter-spacing: -0.02em; }
+        .text-content p { font-size: 1.15rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+        .citation { font-size: 0.9rem; color: var(--text-muted); display: flex; align-items: center; gap: 8px; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
+        .cards-container { display: grid; gap: 2rem; max-width: 1200px; margin: 0 auto; }
+        .problem-grid .cards-container { grid-template-columns: 1fr; }
+        @media (min-width: 500px) { .problem-grid .cards-container { grid-template-columns: 1fr 1fr; } }
+        .interactive-card { background: var(--bg-panel); padding: 2.5rem 2rem; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease; }
+        .interactive-card:hover { border-color: rgba(0, 230, 118, 0.4); box-shadow: 0 15px 30px rgba(0,230,118,0.1); transform: translateY(-5px); }
+        .stat-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem; }
+        .stat-number { font-size: clamp(2.5rem, 4vw, 3.5rem); font-weight: 800; color: var(--accent-orange); line-height: 1; letter-spacing: -0.05em; }
+        .stat-label { font-size: 1.1rem; color: var(--text-light); font-weight: 600; margin-bottom: 0.5rem; }
+        .stat-sub { font-size: 0.95rem; color: var(--text-muted); }
+
+        /* --- Interactive Timeline Section --- */
+        .timeline-scroll-area { width: 100%; overflow-x: auto; overflow-y: hidden; padding: 60px 0 100px 0; scrollbar-width: thin; scrollbar-color: var(--primary) rgba(255,255,255,0.05); scroll-behavior: smooth; }
+        .timeline-scroll-area::-webkit-scrollbar { height: 8px; }
+        .timeline-scroll-area::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .timeline-scroll-area::-webkit-scrollbar-thumb { background-color: var(--primary); border-radius: 10px; }
+        .timeline-track { display: inline-flex; align-items: center; padding: 0 15vw; min-width: min-content; }
+        .t-step-container { display: flex; align-items: center; position: relative; }
+        .t-box, .system-wrapper .t-box, .system-wrapper .d-box { width: var(--box-size); height: var(--box-size); background: var(--bg-dark); border: 2px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.8rem 1.2rem 4rem 1.2rem; position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: flex-start; transition: transform 0.8s var(--ease), margin 0.8s var(--ease), opacity 0.8s var(--ease), border-color 0.8s var(--ease), box-shadow 0.8s var(--ease); }
+        .t-box { transform: scale(var(--scale-idle)); opacity: 0.4; margin: 0 var(--margin-idle); }
+        .t-box.active { transform: scale(var(--scale-active)); opacity: 1; border-color: var(--primary); box-shadow: 0 15px 40px rgba(0, 230, 118, 0.15); background: #0f151e; margin: 0 var(--margin-active); z-index: 10; }
+        .t-box.completed { opacity: 0.6; transform: scale(var(--scale-idle)); margin: 0 var(--margin-idle); border-color: rgba(0, 230, 118, 0.3); }
+        body.interactive .t-box:hover, body.interactive .system-wrapper:hover #step-sys, body.interactive .obs-box:hover { transform: scale(calc(var(--scale-active) * 0.9)) !important; opacity: 1 !important; margin: 0 calc(var(--margin-active) * 0.5) !important; border-color: var(--primary); box-shadow: 0 10px 30px rgba(0, 230, 118, 0.2); background: #0f151e; z-index: 20; cursor: pointer; }
+        body.interactive .t-box:hover .box-icon, body.interactive .system-wrapper:hover #step-sys .box-icon { animation: smooth-vibe 3s infinite ease-in-out; color: var(--primary); }
+
+        .obs-box { background: rgba(255, 0, 170, 0.05) !important; border-color: rgba(255, 0, 170, 0.3) !important; cursor: pointer; justify-content: center !important; padding-bottom: 1.8rem !important; }
+        .obs-box.active { border-color: var(--accent-driver) !important; box-shadow: 0 15px 40px rgba(255, 0, 170, 0.3) !important; transform: scale(var(--scale-active)); margin: 0 var(--margin-active); }
+        .obs-box .box-icon { color: var(--accent-driver); width: 48px; height: 48px; margin-bottom: 0.5rem;}
+        .obs-box h3 { color: var(--text-light); font-size: 1.1rem; }
+        .obs-pulse { animation: pulse-border 2s infinite; }
+        @keyframes pulse-border { 0% { box-shadow: 0 0 0 0 rgba(255, 0, 170, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(255, 0, 170, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 0, 170, 0); } }
+
+        .system-wrapper { width: var(--box-size); height: var(--box-size); margin: 0 var(--margin-idle); transition: margin 0.8s var(--ease); position: relative; display: flex; justify-content: center; align-items: center; }
+        .system-wrapper.active-wrapper { margin: 0 var(--margin-active); }
+        .system-wrapper .t-box, .system-wrapper .d-box { position: absolute; top: 0; left: 0; margin: 0 !important; width: 100%; height: 100%; background: #111820; }
+        .system-wrapper .d-box { transform: translateY(150%) scale(var(--scale-idle)); opacity: 0; pointer-events: none; }
+        .system-wrapper #step-sys:not(.active) { transform: translateY(0) scale(var(--scale-idle)); opacity: 0.4; }
+        .system-wrapper #step-sys.completed { opacity: 0.6; border-color: rgba(255, 0, 170, 0.3); }
+        .system-wrapper .active { transform: translateY(0) scale(var(--scale-active)) !important; opacity: 1 !important; border-color: var(--primary-dark); box-shadow: 0 5px 30px rgba(0, 230, 118, 0.2); z-index: 10; pointer-events: auto; }
+        .system-wrapper .flown-up { transform: translateY(-150%) scale(var(--scale-idle)) !important; opacity: 0 !important; pointer-events: none; }
+        .system-wrapper #step-sys.active { border-color: var(--accent-driver); box-shadow: 0 10px 40px rgba(255, 0, 170, 0.2); }
+
+        .t-step-num { font-size: 0.95rem; color: var(--text-light); margin-bottom: 0.5rem; font-weight: 700; }
+        .t-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; }
+        .box-icon { width: 36px; height: 36px; color: var(--text-muted); margin-bottom: 0.8rem; transition: color 0.6s ease; }
+        .t-box.completed .box-icon { color: var(--primary-dark); }
+        .system-wrapper .completed .box-icon { color: var(--accent-driver); }
+        @keyframes smooth-vibe { 0% { transform: scale(1); color: #00e676; filter: drop-shadow(0 0 8px rgba(0,230,118,0.6)); } 33% { transform: scale(1.15); color: #00f2fe; filter: drop-shadow(0 0 12px rgba(0,242,254,0.6)); } 66% { transform: scale(1.05); color: #ff00aa; filter: drop-shadow(0 0 10px rgba(255,0,170,0.6)); } 100% { transform: scale(1); color: #00e676; filter: drop-shadow(0 0 8px rgba(0,230,118,0.6)); } }
+        .t-box.active .box-icon, .system-wrapper .active .box-icon { animation: smooth-vibe 3s infinite ease-in-out; }
+        .t-line-wrapper { width: var(--line-width); height: 4px; background: rgba(255,255,255,0.05); position: relative; z-index: 1; border-radius: 4px; overflow: hidden; }
+        .t-line-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.8s linear; }
+
+        .btn-start { display: inline-block; background: var(--primary); color: #000; border: none; padding: 12px 35px; border-radius: 50px; font-weight: 800; cursor: pointer; transition: transform 0.2s, background 0.2s; font-size: 1rem; margin-top: 1.5rem; }
+        .btn-start:hover { transform: scale(1.05); background: #00ff84; }
+        
+        .btn-view-driver { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); background: transparent; border: 1px solid var(--accent-driver); color: var(--accent-driver); border-radius: 6px; padding: 10px 0; font-weight: 800; cursor: pointer; transition: transform 0.2s, background 0.2s; font-size: 0.9rem; display: none; }
+        .btn-view-driver:hover { background: rgba(255, 0, 170, 0.1); }
+        body.interactive .system-wrapper #step-sys .btn-view-driver { display: block; }
+        .loader { display: none; position: absolute; bottom: 65px; left: 50%; width: 28px; height: 28px; border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid var(--accent-driver); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: translateX(-50%) rotate(0deg); } 100% { transform: translateX(-50%) rotate(360deg); } }
+
+        /* --- Pain Points Section --- */
+        .pain-container { display: grid; gap: 4rem; max-width: 1200px; margin: 0 auto; }
+        @media (min-width: 800px) { .pain-container { grid-template-columns: 1fr 1fr; } }
+        .stakeholder-column h3 { font-size: 1.8rem; color: var(--text-light); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 2px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 10px; }
+        .pain-card { background: var(--bg-panel); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; transition: var(--transition); }
+        .pain-card:hover { border-color: rgba(255, 255, 255, 0.15); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .pain-card h4 { font-size: 1.2rem; margin-bottom: 0.8rem; display: flex; align-items: center; gap: 8px; }
+        .stakeholder-column:first-child .pain-card h4 { color: var(--primary); }
+        .stakeholder-column:last-child .pain-card h4 { color: var(--accent-driver); }
+        .pain-card > p { color: var(--text-light); font-size: 1.05rem; margin-bottom: 1rem; }
+        .reason-btn { background: transparent; border: none; padding: 5px 0; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: var(--transition); display: inline-block; text-align: left; }
+        .stakeholder-column:first-child .pain-card .reason-btn { color: var(--primary); }
+        .stakeholder-column:last-child .pain-card .reason-btn { color: var(--accent-driver); }
+        .reason-btn:hover { opacity: 0.7; text-decoration: underline; }
+        .reason-content { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.4s var(--ease), opacity 0.4s var(--ease), margin-top 0.4s var(--ease), padding 0.4s var(--ease); background: rgba(0,0,0,0.2); border-radius: 8px; }
+        .reason-content.show { max-height: 300px; opacity: 1; margin-top: 1rem; padding: 1rem; border-left: 3px solid var(--text-muted); }
+        .reason-content p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin: 0; }
+
+        /* --- Solution Section --- */
+        .solution-canvas { position: relative; max-width: 1100px; height: 650px; margin: 0 auto; display: flex; justify-content: center; align-items: center; }
+        .center-node { position: absolute; z-index: 10; display: flex; justify-content: center; align-items: center; }
+        .booking-card-img { max-width: 100%; width: 300px; border-radius: 16px; position: relative; z-index: 2; box-shadow: 0 20px 60px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
+        .glow-backdrop { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 120%; height: 120%; background: radial-gradient(circle, var(--primary) 0%, transparent 60%); opacity: 0.2; z-index: 1; filter: blur(40px); animation: pulse-glow 4s infinite alternate; }
+        @keyframes pulse-glow { 0% { opacity: 0.15; transform: translate(-50%, -50%) scale(0.9); } 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1.1); } }
+        .float-wrap { position: absolute; z-index: 5; animation: float-y 6s ease-in-out infinite; }
+        .fw-1 { top: 5%; left: 2%; animation-delay: 0s; }
+        .fw-2 { bottom: 5%; left: 5%; animation-delay: -2s; }
+        .fw-3 { top: 10%; right: 2%; animation-delay: -4s; }
+        .fw-4 { bottom: 8%; right: 5%; animation-delay: -1s; }
+        @keyframes float-y { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+        .floating-card { width: 280px; background: rgba(22, 27, 34, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1); text-align: left; }
+        .floating-card.active-highlight { border-color: var(--primary); background: rgba(22, 27, 34, 0.95); box-shadow: 0 10px 40px rgba(0, 230, 118, 0.25); transform: scale(1.08); }
+        .floating-card.active-highlight .icon { color: var(--primary); filter: drop-shadow(0 0 5px var(--primary)); }
+        .floating-card h4 { color: var(--text-light); font-size: 1.1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 10px; }
+        .floating-card h4 .icon { color: var(--text-muted); width: 24px; height: 24px; transition: all 0.5s; }
+        .floating-card p { color: var(--text-muted); font-size: 0.95rem; margin: 0; line-height: 1.5; }
+        .fw-1 .floating-card, .fw-2 .floating-card { text-align: right; }
+        .fw-1 .floating-card h4, .fw-2 .floating-card h4 { flex-direction: row-reverse; }
+        @media (max-width: 991px) {
+            .solution-canvas { height: auto; display: flex; flex-direction: column; gap: 2rem; margin-top: 2rem; }
+            .center-node { position: relative; transform: none; top: auto; left: auto; order: -1; margin-bottom: 1rem; }
+            .booking-card-img { width: 280px; }
+            .float-wrap { position: relative; top: auto !important; left: auto !important; right: auto !important; bottom: auto !important; animation: none; width: 100%; max-width: 400px; }
+            .floating-card { width: 100%; text-align: center !important; }
+            .floating-card h4 { justify-content: center !important; flex-direction: row !important; }
+        }
+
+        /* --- NEW: HOW IT WORKS (VIDEO & AUTO-SCROLL STEPS) --- */
+        .hw-split-layout { display: grid; grid-template-columns: 1fr; gap: 3rem; align-items: start; max-width: 1200px; margin: 0 auto; }
+        @media (min-width: 992px) { .hw-split-layout { grid-template-columns: 1fr 1fr; align-items: stretch; } }
+
+        .vid-player-wrap { 
+            background: #000; border-radius: 16px; overflow: hidden; position: relative;
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            cursor: pointer; aspect-ratio: 9/16; max-height: 75vh; margin: 0 auto; width: 100%; max-width: 450px;
+        }
+        .vid-player-wrap video { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        .vid-play-overlay, .vid-pause-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 80px; height: 80px; background: #000; border: 2px solid #000;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            color: var(--text-light); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; 
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+        .vid-pause-overlay { opacity: 0; }
+        
+        .vid-player-wrap.is-playing .vid-play-overlay { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+        .vid-player-wrap.is-playing:hover .vid-pause-overlay { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        .vid-steps-list { 
+            display: flex; flex-direction: column; gap: 2rem; height: 100%; max-height: 75vh; 
+            overflow-y: hidden; padding: 35vh 1rem; scroll-behavior: smooth; 
+        }
+        
+        .vid-step {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 1rem; padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); 
+            background: rgba(255,255,255,0.02); opacity: 0.3; transition: all 0.4s var(--ease);
+            aspect-ratio: 1/1; width: 100%; max-width: 260px; margin: 0 auto; text-align: center; flex-shrink: 0;
+        }
+        
+        .vid-step.active {
+            opacity: 1; background: var(--bg-panel); border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0, 230, 118, 0.15); transform: scale(1.05);
+        }
+        .vid-step.driver-step.active { border-color: var(--accent-driver); box-shadow: 0 10px 30px rgba(255, 0, 170, 0.15); }
+        
+        .vs-icon-box {
+            width: 50px; height: 50px; border-radius: 50%; background: var(--bg-dark); border: 2px solid rgba(255,255,255,0.1);
+            display: flex; align-items: center; justify-content: center; color: var(--text-muted); flex-shrink: 0; transition: all 0.4s;
+            margin-bottom: 0.5rem;
+        }
+        .vid-step.active .vs-icon-box { color: var(--primary); border-color: var(--primary); box-shadow: 0 0 15px rgba(0,230,118,0.3); }
+        .vid-step.driver-step.active .vs-icon-box { color: var(--accent-driver); border-color: var(--accent-driver); box-shadow: 0 0 15px rgba(255,0,170,0.3); }
+
+        .vs-text { display: flex; flex-direction: column; align-items: center; }
+        .vs-badge { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 700; margin-bottom: 8px; transition: color 0.4s; }
+        .vid-step.active .vs-badge { color: var(--primary); }
+        .vid-step.driver-step.active .vs-badge { color: var(--accent-driver); }
+        
+        .vs-text h4 { color: var(--text-light); font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .vs-text p { color: var(--text-muted); font-size: 0.9rem; margin: 0; line-height: 1.4; }
+
+
+        /* --- Vertical Market Dashboard Section --- */
+        #market { background-color: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.05); }
+        .db-container { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 3rem; }
+        .db-top-row { display: grid; gap: 2rem; align-items: center; }
+        @media (min-width: 992px) { .db-top-row { grid-template-columns: 1fr 1fr; } }
+        
+        .db-stats-panel { display: flex; flex-direction: column; justify-content: center; }
+        @media (min-width: 992px) { .db-stats-panel { padding-left: 3rem; border-left: 1px solid rgba(255,255,255,0.1); } }
+        @media (max-width: 991px) { .db-stats-panel { padding-top: 2rem; margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); } }
+
+        .db-stat-row { display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem; }
+        .db-stat-num { font-size: 3.5rem; font-weight: 800; color: var(--accent); line-height: 1; text-shadow: 0 0 15px rgba(0,242,254,0.3); }
+        .db-stat-text { font-size: 1.05rem; color: var(--text-light); line-height: 1.3; }
+        
+        .db-mid-row { display: grid; gap: 2rem; }
+        @media (min-width: 992px) { .db-mid-row { grid-template-columns: 1fr 1fr; } }
+
+        .db-cycle-wrapper {
+            background: radial-gradient(circle at center, rgba(0, 242, 254, 0.08) 0%, transparent 60%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 400px; position: relative; overflow: hidden;
+        }
+        
+        .cycle-graphic {
+            position: relative; width: 280px; height: 280px; 
+            border: 2px dashed rgba(0, 242, 254, 0.3); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            animation: spin-slow 60s linear infinite; margin-top: 1rem;
+        }
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+
+        .cycle-center {
+            position: absolute; width: 80px; height: 80px; background: var(--bg-panel);
+            border: 2px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            z-index: 10; box-shadow: 0 0 20px rgba(0, 242, 254, 0.3); flex-direction: column;
+            animation: spin-reverse 60s linear infinite; 
+        }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        .cycle-center span { font-size: 1.2rem; font-weight: 800; color: var(--text-light); line-height: 1;}
+        .cycle-center span:last-child { color: var(--primary); }
+
+        .quadrant { position: absolute; width: 140px; text-align: center; animation: spin-reverse 60s linear infinite; }
+        .quadrant.top-left { top: -20px; left: -40px; text-align: right; }
+        .quadrant.top-right { top: -20px; right: -40px; text-align: left; }
+        .quadrant.bottom-left { bottom: -20px; left: -40px; text-align: right; }
+        .quadrant.bottom-right { bottom: -20px; right: -40px; text-align: left; }
+        
+        .q-label { display: block; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .q-pct { display: block; font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1.1; }
+
+        .db-ultimate-box {
+            background: linear-gradient(145deg, rgba(0, 230, 118, 0.05) 0%, rgba(0,0,0,0) 100%);
+            border-color: rgba(0, 230, 118, 0.2); display: flex; flex-direction: column; justify-content: center;
+        }
+        .db-ub-content { display: flex; gap: 1.5rem; align-items: center; }
+        .db-ub-phone { width: 100px; flex-shrink: 0; text-align: center; }
+        .db-ub-phone img { width: 100%; border-radius: 8px; border: 1px solid var(--primary); box-shadow: 0 5px 15px rgba(0,230,118,0.2);}
+        .db-ub-phone span { display: block; font-size: 0.75rem; color: var(--primary); margin-top: 8px; font-weight: bold;}
+        
+        .db-ub-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%; }
+        .db-ub-item { display: flex; flex-direction: column; }
+        .db-ub-item h5 { color: var(--text-light); font-size: 0.9rem; display: flex; align-items: center; gap: 5px; margin-bottom: 5px;}
+        .db-ub-item h5 .icon { width: 16px; height: 16px; color: var(--primary); }
+        .db-ub-item p { color: var(--text-muted); font-size: 0.85rem; line-height: 1.4; margin:0;}
+
+        @media (max-width: 600px) {
+            .db-ub-content { flex-direction: column; text-align: center; }
+            .db-ub-item h5 { justify-content: center; }
+            .cycle-graphic { width: 220px; height: 220px; margin-top: 2rem;}
+            .db-ub-grid { grid-template-columns: 1fr; }
+        }
+
+        .db-bottom-row { display: flex; flex-direction: column; gap: 1.5rem; }
+        .image-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+        
+        .location-card {
+            position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            aspect-ratio: 16/9; border: 1px solid rgba(255,255,255,0.05); background: var(--bg-panel);
+        }
+        .location-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); opacity: 0.8; }
+        .location-card:hover img { transform: scale(1.05); opacity: 1; }
+        
+        .location-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 2.5rem 1rem 1rem;
+            background: linear-gradient(0deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+            color: #fff; font-weight: 600; text-align: left; font-size: 0.95rem; display: flex; flex-direction: column; gap: 4px;
+        }
+        .location-overlay span { color: var(--primary); font-size: 0.8rem; font-weight: normal; display: flex; align-items: center; gap: 5px;}
+        .location-overlay span .icon { width: 14px; height: 14px;}
+
+        /* --- The Ultimate Impact Section --- */
+        .impact-container { max-width: 1200px; margin: 0 auto; display: grid; gap: 2rem; }
+        .impact-grid { display: grid; gap: 2rem; grid-template-columns: 1fr; }
+        @media (min-width: 800px) { .impact-grid { grid-template-columns: 1fr 1fr; } }
+        .impact-card { background: var(--bg-dark); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 2.5rem 2rem; transition: transform 0.3s ease, box-shadow 0.3s ease; display: flex; flex-direction: column; gap: 1rem; }
+        .impact-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,230,118,0.1); border-color: rgba(0,230,118,0.3); }
+        .impact-card:nth-child(2):hover { box-shadow: 0 15px 30px rgba(255, 0, 170, 0.1); border-color: rgba(255, 0, 170, 0.3); }
+        .impact-card h3 { font-size: 1.5rem; display: flex; align-items: center; gap: 10px; margin-bottom: 0.5rem; }
+        .impact-card p { color: var(--text-muted); font-size: 1rem; line-height: 1.6; }
+        .impact-stats { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: auto; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        .impact-stat { background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; font-size: 0.85rem; color: var(--text-light); flex: 1; min-width: 130px; border: 1px solid rgba(255,255,255,0.02);}
+        .impact-stat span { display: block; font-size: 1.6rem; font-weight: 800; margin-bottom: 2px; }
+        
+        .platform-banner { background: linear-gradient(135deg, rgba(0, 242, 254, 0.1) 0%, rgba(0,0,0,0) 100%); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 16px; padding: 3rem 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.5rem; transition: transform 0.3s; margin-top: 2rem;}
+        .platform-banner:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0, 242, 254, 0.15); }
+        .platform-banner h3 { color: var(--accent); font-size: 1.8rem; display: flex; align-items: center; gap: 10px; margin: 0;}
+        .platform-banner p { color: var(--text-light); font-size: 1.1rem; max-width: 700px; margin: 0; line-height: 1.6;}
+        .platform-btn { background: var(--accent); color: #000; padding: 12px 30px; border-radius: 50px; font-weight: 800; text-decoration: none; transition: transform 0.2s, background 0.2s; font-size: 1rem; cursor: pointer; border: none;}
+        .platform-btn:hover { transform: scale(1.05); background: #fff; }
+
+        /* --- ESTIMATOR PAGE SPECIFIC STYLES --- */
+        .est-grid { display: grid; gap: 3rem; max-width: 1200px; margin: 0 auto; align-items: start;}
+        @media (min-width: 992px) { .est-grid { grid-template-columns: 1.2fr 1fr; } }
+        
+        .est-benefits { display: flex; flex-direction: column; gap: 2rem; }
+        .est-card { background: var(--bg-dark); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .est-card h4 { font-size: 1.3rem; color: var(--text-light); display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+        .est-card h4 .icon { color: var(--accent); width: 28px; height: 28px; }
+        .est-card p { color: var(--text-muted); font-size: 1rem; line-height: 1.6; }
+        .est-highlight { background: rgba(0, 242, 254, 0.05); padding: 1rem; border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; margin-top: 1rem; }
+        .est-highlight span { display: block; font-size: 1.4rem; color: var(--accent); font-weight: 800; margin-bottom: 4px; }
+        .est-highlight p { margin: 0; font-size: 0.9rem; color: var(--text-light); }
+
+        .est-form-card { background: linear-gradient(180deg, var(--bg-dark) 0%, #111822 100%); border: 1px solid var(--primary); border-radius: 16px; padding: 2.5rem; box-shadow: 0 15px 40px rgba(0,230,118,0.15); }
+        .est-form-card h3 { color: var(--primary); font-size: 1.5rem; margin-bottom: 0.5rem; text-align: center; }
+        .est-form-card > p { color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 2rem; }
+        
+        .form-group { margin-bottom: 1.5rem; }
+        .form-group label { display: block; color: var(--text-light); font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; }
+        .form-group input { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 12px 15px; border-radius: 8px; font-size: 1rem; transition: border-color 0.3s; font-family: var(--font-main);}
+        .form-group input:focus { outline: none; border-color: var(--primary); background: rgba(0, 230, 118, 0.05); }
+        
+        .privacy-note { font-size: 0.75rem; color: var(--text-muted); text-align: center; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1.5rem; }
+        .privacy-note .icon { width: 14px; height: 14px; }
+        
+        .btn-calc { width: 100%; background: var(--primary); color: #000; border: none; padding: 15px; border-radius: 8px; font-size: 1.1rem; font-weight: 800; cursor: pointer; transition: transform 0.2s, background 0.2s; margin-top: 1rem; }
+        .btn-calc:hover { background: #00ff84; transform: scale(1.02); }
+
+        .results-container { display: none; margin-top: 4rem; animation: fadeIn 0.5s ease forwards; }
+        .results-container.show { display: block; }
+        
+        .compare-grid { display: grid; gap: 2rem; margin-bottom: 2rem; }
+        @media (min-width: 1024px) { .compare-grid { grid-template-columns: 1fr 1fr; } }
+        
+        .model-col { display: flex; flex-direction: column; gap: 1.5rem; }
+        .chart-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .chart-header h4 { font-size: 1.2rem; margin: 0; }
+        
+        .chart-wrapper { background: var(--bg-panel); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem;}
+        .chart-canvas-wrap { width: 100%; height: 300px; position: relative; }
+
+        .slider-controls { display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 50px; border: 1px solid rgba(0, 230, 118, 0.3);}
+        .slider-controls label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;}
+        .slider-controls input[type="range"] { accent-color: var(--primary); width: 80px; cursor: pointer;}
+        .slider-controls input[type="number"] { width: 50px; background: transparent; border: 1px solid var(--primary); color: var(--primary); text-align: center; border-radius: 4px; padding: 2px; font-weight: bold; font-size: 0.9rem;}
+        
+        .table-box { background: var(--bg-panel); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 1.5rem; overflow-x: auto; width: 100%; display: block;}
+        table { width: 100%; border-collapse: collapse; text-align: right; white-space: nowrap; min-width: 400px; }
+        th, td { padding: 10px 12px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: var(--text-muted); font-weight: 600; text-transform: uppercase;}
+        td { color: var(--text-light); }
+        td:first-child, th:first-child { text-align: left; }
+        .table-spot th { color: var(--primary); }
+
+        .totals-grid { 
+            display: grid; grid-template-columns: 1fr 100px 1fr; gap: 1rem 1.5rem; align-items: center;
+            background: var(--bg-panel); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 2rem;
+            margin-top: 1rem; text-align: center;
+        }
+        @media (max-width: 768px) { .totals-grid { grid-template-columns: 1fr 80px 1fr; padding: 1.5rem 1rem; gap: 0.5rem; } }
+        
+        .t-metric { display: flex; flex-direction: column; gap: 5px; margin-bottom: 1.5rem; }
+        .t-metric span { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; font-weight: 600; }
+        .t-metric div { color: var(--text-light); font-size: 1.5rem; font-weight: 800; }
+        @media (max-width: 768px) { .t-metric div { font-size: 1.2rem; } }
+        
+        .t-diff {
+            background: rgba(0, 230, 118, 0.1); color: var(--primary); border: 1px solid rgba(0, 230, 118, 0.3);
+            border-radius: 50px; padding: 8px 0; font-weight: 800; font-size: 1rem; display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem;
+        }
+
+        .grand-summary { display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; margin-top: 2rem; }
+        .gs-card { background: linear-gradient(135deg, rgba(0, 230, 118, 0.05) 0%, rgba(0,0,0,0) 100%); border: 1px solid var(--primary); border-radius: 16px; padding: 2.5rem 2rem; text-align: center; flex: 1; min-width: 280px; box-shadow: 0 15px 40px rgba(0, 230, 118, 0.1); overflow: hidden; }
+        .gs-card h5 { color: var(--text-light); font-size: 1.2rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .gs-card div { color: var(--primary); font-size: clamp(1.5rem, 3.5vw, 2.76rem); font-weight: 800; line-height: 1; white-space: nowrap; }
+
+        @media (max-width: 768px) {
+            .chart-wrapper { padding: 1rem; }
+            .table-box { padding: 1rem; }
+            .chart-canvas-wrap { height: 250px; }
+        }
+
+        /* --- CONTACT PAGE STYLES --- */
+        .space-earth-bg {
+            background-color: #03050a;
+            background-image: 
+                radial-gradient(ellipse 150% 50% at 50% 120%, rgba(0, 119, 255, 0.25) 0%, rgba(0, 242, 254, 0.1) 30%, rgba(0, 230, 118, 0.05) 50%, transparent 80%),
+                radial-gradient(circle at top right, rgba(255, 255, 255, 0.03) 0%, transparent 40%);
+            position: relative;
+        }
+        .space-earth-bg::before {
+            content: ''; position: absolute; bottom: -20%; left: -10%; width: 120%; height: 50%;
+            background: radial-gradient(ellipse at center top, rgba(0, 242, 254, 0.15) 0%, transparent 70%);
+            border-radius: 50% 50% 0 0; z-index: 0; pointer-events: none;
+        }
+
+        .contact-layout {
+            display: flex; flex-direction: column; gap: 2rem; max-width: 1000px; margin: 0 auto;
+            position: relative; z-index: 2; width: 100%;
+        }
+
+        .contact-block {
+            background: rgba(13, 17, 23, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 2.5rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4); text-align: center; transition: border-color 0.3s;
+        }
+        .contact-block:hover { border-color: rgba(255,255,255,0.15); }
+
+        .contact-badge { display: inline-block; padding: 6px 16px; background: rgba(0, 242, 254, 0.1); color: var(--accent); border: 1px solid rgba(0, 242, 254, 0.3); border-radius: 50px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;}
+        
+        .about-grid { display: grid; grid-template-columns: 1fr; gap: 2rem; align-items: center; margin-top: 1rem;}
+        @media(min-width: 768px) { .about-grid { grid-template-columns: 1fr 1.5fr; text-align: left; } }
+        
+        .about-left { display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: none; padding-right: 0;}
+        @media(min-width: 768px) { .about-left { border-right: 1px solid rgba(255,255,255,0.1); padding-right: 2rem; } }
+        
+        .profile-img { width: 160px; height: 160px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); box-shadow: 0 0 30px rgba(0, 230, 118, 0.3); margin-bottom: 1.5rem;}
+        
+        .about-right { display: flex; flex-direction: column; gap: 1.2rem; justify-content: center; }
+        
+        .edu-card-row { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); padding: 1.2rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 20px; transition: transform 0.3s, border-color 0.3s; text-align: left;}
+        .edu-card-row:hover { transform: translateX(5px); border-color: var(--primary); background: rgba(0, 230, 118, 0.05); }
+        
+        .edu-icon-circle {
+            width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--primary);
+            background: rgba(255,255,255,0.05); padding: 8px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.2); flex-shrink: 0;
+        }
+        .edu-icon-circle img { width: 100%; height: 100%; object-fit: contain; }
+        
+        .contact-links { display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem; }
+        @media (min-width: 600px) { .contact-links { flex-direction: row; justify-content: center; gap: 1.5rem; } }
+        
+        .contact-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 15px 30px; border-radius: 12px; color: var(--text-light); text-decoration: none; font-weight: 600; transition: all 0.3s; width: 100%; max-width: 250px; margin: 0 auto; font-size: 1.05rem;}
+        .contact-btn:hover { border-color: var(--primary); background: rgba(0, 230, 118, 0.05); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 230, 118, 0.15); }
+        .contact-btn .icon { color: var(--primary); }
+        
+        .coming-soon-box { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2.5rem; }
+
+        /* --- PROMPT PAGE STYLES --- */
+        .prompt-box {
+            background: var(--bg-dark); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
+            padding: 2rem; margin-top: 2rem; text-align: left;
+            max-height: 500px; overflow-y: auto; font-family: monospace; color: var(--text-muted);
+            line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap;
+            scrollbar-width: thin; scrollbar-color: var(--primary) rgba(255,255,255,0.05);
+        }
+        .prompt-box::-webkit-scrollbar { width: 8px; }
+        .prompt-box::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+        .prompt-box::-webkit-scrollbar-thumb { background-color: var(--primary); border-radius: 10px; }
+
+        footer { text-align: center; padding: 2rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); background: var(--bg-panel); font-size: 0.9rem;}
+    </style>
+</head>
+<body class="interactive">
+
+    <svg style="display: none;">
+        <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></symbol>
+        <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></symbol>
+        <symbol id="icon-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></symbol>
+        <symbol id="icon-car" viewBox="0 0 24 24"><path d="M18.5 10H5.5L4 13.5v7a.5.5 0 00.5.5h1a.5.5 0 00.5-.5V19h12v1.5a.5.5 0 00.5.5h1a.5.5 0 00.5-.5v-7L18.5 10zM6.5 16.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zm11 0a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM5.12 11h13.76L18 13H6l-.88-2zM4 10V9a1 1 0 011-1h14a1 1 0 011 1v1M8 8V6a2 2 0 012-2h4a2 2 0 012 2v2"></path></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></symbol>
+        <symbol id="icon-server" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></symbol>
+        <symbol id="icon-wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></symbol>
+        <symbol id="icon-bell" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></symbol>
+        <symbol id="icon-nav" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></symbol>
+        <symbol id="icon-radar" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></symbol>
+        <symbol id="icon-key" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="10 8 16 12 10 16 10 8"></polygon></symbol>
+        <symbol id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></symbol>
+        <symbol id="icon-wheel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></symbol>
+        <symbol id="icon-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></symbol>
+        <symbol id="icon-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></symbol>
+        <symbol id="icon-trending" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></symbol>
+        <symbol id="icon-layers" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></symbol>
+        <symbol id="icon-fast" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></symbol>
+        <symbol id="icon-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><rect x="7" y="7" width="10" height="10" rx="1" ry="1"></rect></symbol>
+        <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></symbol>
+        <symbol id="icon-mail" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></symbol>
+        <symbol id="icon-linkedin" viewBox="0 0 24 24"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></symbol>
+    </svg>
+
+    <nav id="navbar">
+        <div class="nav-container">
+            <a class="logo" onclick="switchPage('page-home')">Spot Booking</a>
+            <div class="menu-toggle" id="mobile-menu">
+                <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </div>
+            <div class="nav-links" id="nav-links">
+                <a class="nav-link active" data-target="page-home">Home</a>
+                <a class="nav-link" data-target="page-estimator">Estimator</a>
+                <a class="nav-link" data-target="page-prompt">Prompt</a>
+                <a class="nav-link" data-target="page-contact">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <div id="page-home" class="page-view active-page">
+        
+        <section class="hero">
+            <div class="hero-content">
+                <span class="tagline">The Next Evolution</span>
+                <h1>Eliminating Friction in<br>India's Ride-Hailing.</h1>
+                <p>Bypassing broken algorithms and endless wait times. We are redefining how India moves by bringing back direct connections.</p>
+            </div>
+        </section>
+
+        <section class="section-padding" style="background: #ffffff; color: #1a1a1a;">
+            <div class="problem-grid">
+                <div class="text-content">
+                    <h2 style="color: #1a1a1a;">A System at Its Breaking Point</h2>
+                    <p style="color: #555;">The gap between rider expectations and driver reality in India is widening rapidly. The current model is failing under algorithmic inefficiencies, leaving stakeholders stranded.</p>
+                    <p style="color: #555;">Surging driver cancellations and escalating wait times are no longer anomalies; they are symptoms of a structural collapse in traditional ride-hailing.</p>
+                    <span class="citation" style="border-top-color: #eee;">— Data sourced from Fortune India (2025)</span>
+                </div>
+                <div class="cards-container">
+                    <div class="interactive-card" style="background: #f8f9fa; border-color: #eee;">
+                        <div class="stat-header"><div class="stat-number">82%</div></div>
+                        <div class="stat-label" style="color:#111;">Driver Cancellations</div>
+                        <div class="stat-sub">Rose dramatically to 82% in 2025, up from 75% in 2023.</div>
+                    </div>
+                    <div class="interactive-card" style="background: #f8f9fa; border-color: #eee;">
+                        <div class="stat-header"><div class="stat-number">53%</div></div>
+                        <div class="stat-label" style="color:#111;">Long Wait Times</div>
+                        <div class="stat-sub">Users experiencing frustrating delays increased from 48%.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding" style="background-color: var(--bg-panel); border-top: 1px solid rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.02);">
+            <div class="centered-text">
+                <h2>The Current Broken Loop</h2>
+                <p>Click <strong>"Start Flow"</strong> to trace a ride request. Watch how digital delays and physical disconnects force a frustrating hunt between driver and rider.</p>
+                <button class="btn-start" id="btn-start-top" style="position: relative; left: 0; transform: none; width: auto; padding: 12px 40px; margin-top: 1.5rem;">Start Flow</button>
+            </div>
+            
+            <div class="timeline-scroll-area" id="timeline-container">
+                <div class="timeline-track">
+                    <div class="t-step-container">
+                        <div class="t-box active" id="step-r1" style="opacity: 1; transform: scale(var(--scale-active)); margin: 0 var(--margin-active);">
+                            <svg class="icon box-icon"><use xlink:href="#icon-phone"/></svg><div class="t-step-num">Step 1: Open App</div><div class="t-desc">The user opens the ride-hailing application on their phone.</div><button class="btn-start" id="btn-start" style="display:none;">Start Flow</button>
+                        </div>
+                        <div class="t-line-wrapper"><div class="t-line-fill" id="line-r1"></div></div>
+                    </div>
+                    <div class="t-step-container"><div class="t-box" id="step-r2"><svg class="icon box-icon"><use xlink:href="#icon-pin"/></svg><div class="t-step-num">Step 2: Pickup Location</div><div class="t-desc">User allows GPS location or types an exact pickup point.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r2"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r3"><svg class="icon box-icon"><use xlink:href="#icon-flag"/></svg><div class="t-step-num">Step 3: Drop Location</div><div class="t-desc">User enters the final destination they want to travel to.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r3"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r4"><svg class="icon box-icon"><use xlink:href="#icon-car"/></svg><div class="t-step-num">Step 4: Choose Vehicle</div><div class="t-desc">User selects between available options like Cab, Auto, or Bike.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r4"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r5"><svg class="icon box-icon"><use xlink:href="#icon-check"/></svg><div class="t-step-num">Step 5: Click Book</div><div class="t-desc">User hits book. The app interface shifts entirely into a "Searching..." loop.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r5"></div></div></div>
+                    <div class="t-step-container">
+                        <div class="system-wrapper" id="system-wrapper">
+                            <div class="t-box system-node" id="step-sys"><svg class="icon box-icon"><use xlink:href="#icon-server"/></svg><div class="t-step-num" style="color:var(--accent-orange);">System: Allocation</div><div class="t-desc">Algorithm pings drivers. Waiting for acceptance.</div><div class="loader" id="sys-loader"></div><button class="btn-view-driver" id="btn-view-driver">View Driver Steps</button></div>
+                            <div class="d-box" id="step-d1"><svg class="icon box-icon"><use xlink:href="#icon-wifi"/></svg><div class="t-step-num">Step 1: Active App</div><div class="t-desc">Driver must be online and waiting in the vicinity.</div></div>
+                            <div class="d-box" id="step-d2"><svg class="icon box-icon"><use xlink:href="#icon-bell"/></svg><div class="t-step-num">Step 2: Notification</div><div class="t-desc">App shows ping with fare, pickup distance, and drop location.</div></div>
+                            <div class="d-box" id="step-d3"><svg class="icon box-icon"><use xlink:href="#icon-check"/></svg><div class="t-step-num">Step 3: Accept</div><div class="t-desc">Driver quickly evaluates details and clicks accept.</div></div>
+                            <div class="d-box" id="step-d4"><svg class="icon box-icon"><use xlink:href="#icon-nav"/></svg><div class="t-step-num">Step 4: Redirect</div><div class="t-desc">App switches to navigation mode to guide driver to customer.</div></div>
+                        </div>
+                        <div class="t-line-wrapper"><div class="t-line-fill" id="line-sys-to-r6"></div></div>
+                    </div>
+                    <div class="t-step-container"><div class="t-box" id="step-r6"><svg class="icon box-icon"><use xlink:href="#icon-check"/></svg><div class="t-step-num">Step 6: Ride Confirmed</div><div class="t-desc">Driver accepts. App stops searching and shows "Ride Booked".</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r6"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r7"><svg class="icon box-icon"><use xlink:href="#icon-radar"/></svg><div class="t-step-num">Step 7: Tracking Arrival</div><div class="t-desc">User waits and watches the driver's icon slowly approach.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r7"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r8"><svg class="icon box-icon"><use xlink:href="#icon-search"/></svg><div class="t-step-num">Step 8: The Hunt</div><div class="t-desc">If they can't find each other, then a phone call happens to blindly find each other.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r8"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r9"><svg class="icon box-icon"><use xlink:href="#icon-key"/></svg><div class="t-step-num">Step 9: Share OTP</div><div class="t-desc">Upon finding each other, rider verbally shares OTP for security check.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r9"></div></div></div>
+                    <div class="t-step-container"><div class="t-box" id="step-r10"><svg class="icon box-icon"><use xlink:href="#icon-play"/></svg><div class="t-step-num">Step 10: Trip Commences</div><div class="t-desc">OTP validated. Driver's map opens for destination and ride begins.</div></div><div class="t-line-wrapper"><div class="t-line-fill" id="line-r11"></div></div></div>
+                    <div class="t-step-container">
+                        <div class="t-box obs-box obs-pulse" id="step-obs" onclick="document.getElementById('pain-points').scrollIntoView({behavior: 'smooth'})">
+                            <svg class="icon box-icon"><use xlink:href="#icon-eye"/></svg><div class="t-step-num" style="color:var(--accent-orange);">Conclusion</div><h3 style="color:var(--text-light); font-size: 1.1rem; margin-bottom: 5px;">View Pain Points</h3><div class="t-desc">Click to explore our observations.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding" style="min-height: 80vh; background: var(--bg-dark);">
+            <div id="pain-points" style="position: absolute; margin-top: -100px;"></div>
+            <div class="centered-text">
+                <h2 style="color: var(--text-light);">Identified Pain Points</h2>
+                <p style="color: var(--text-muted);">A deep dive into the structural failures causing friction for both key stakeholders in the ecosystem.</p>
+            </div>
+            <div class="pain-container">
+                <div class="stakeholder-column">
+                    <h3><svg class="icon" style="color:var(--primary);"><use xlink:href="#icon-user"/></svg> Customers</h3>
+                    <div class="pain-card"><h4><svg class="icon"><use xlink:href="#icon-clock"/></svg> Extended Wait Times</h4><p>Users frequently wait anywhere from 11 to 45 minutes just to secure a ride.</p><button class="reason-btn"><span>Reason &gt;</span></button><div class="reason-content"><p>A combination of low nearby driver availability and heavy urban traffic bottlenecks the matching process, causing severe delays.</p></div></div>
+                    <div class="pain-card"><h4><svg class="icon"><use xlink:href="#icon-alert"/></svg> Stress & Helplessness</h4><p>Users experience high anxiety when they urgently need a ride but cannot get one quickly.</p><button class="reason-btn"><span>Reason &gt;</span></button><div class="reason-content"><p>The system's unreliability means users cannot depend on the app during critical, time-sensitive situations, leaving them stranded without alternative options.</p></div></div>
+                    <div class="pain-card"><h4><svg class="icon"><use xlink:href="#icon-car"/></svg> The Proximity Paradox</h4><p>Users cannot directly hire an available, empty vehicle parked right in front of them.</p><button class="reason-btn"><span>Reason &gt;</span></button><div class="reason-content"><p>Traditional platforms lack a mechanism for decentralized matching. The algorithm acts as a mandatory middleman, failing to recognize or utilize immediate physical proximity.</p></div></div>
+                </div>
+                <div class="stakeholder-column">
+                    <h3><svg class="icon" style="color:var(--accent-driver);"><use xlink:href="#icon-wheel"/></svg> Drivers</h3>
+                    <div class="pain-card"><h4 style="color:var(--accent-driver);"><svg class="icon"><use xlink:href="#icon-trending"/></svg> Diminishing Returns</h4><p>The more rides a driver completes, the fewer profitable requests they seem to receive.</p><button class="reason-btn"><span>Reason &gt;</span></button><div class="reason-content"><p>Biased algorithms often restrict high-value routing availability, attempting to balance network earnings across all drivers rather than rewarding individual efficiency.</p></div></div>
+                    <div class="pain-card"><h4 style="color:var(--accent-driver);"><svg class="icon"><use xlink:href="#icon-layers"/></svg> Platform Moonlighting</h4><p>Drivers juggle multiple ride-hailing apps, frequently rejecting or ignoring incoming requests.</p><button class="reason-btn"><span>Reason &gt;</span></button><div class="reason-content"><p>Because drivers use multiple service providers to survive, they often receive requests on App A while actively servicing a ride on App B, resulting in unaccepted pings and longer wait times.</p></div></div>
+                    <div class="pain-card"><h4 style="color:var(--accent-driver);"><svg class="icon"><use xlink:href="#icon-x"/></svg> Uncompensated "Dry Runs"</h4><p>Drivers waste significant time and fuel traveling to pickup locations with no earnings in return.</p><button class="reason-btn"><span>Reason &gt;</span></button><div class="reason-content"><p>The system frequently assigns long-distance pickups. The time and fuel spent reaching the customer are completely unpaid, resulting in dead mileage.</p></div></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding" style="background: radial-gradient(ellipse at center, rgba(0, 230, 118, 0.12) 0%, var(--bg-dark) 70%); position: relative; overflow: hidden;">
+            <div class="centered-text" style="z-index: 10; position:relative;">
+                <h2 class="gradient-text" style="font-size: clamp(2.5rem, 5vw, 3.5rem); margin-bottom: 1.5rem; font-weight: 800; letter-spacing: -0.02em;">The Solution: Spot Booking</h2>
+                <p style="color: var(--text-muted); max-width: 750px; margin: 0 auto;">
+                    We provide a physical card integrated with a QR code allowing users to instantly scan and book a ride. This elegant solution completely removes the dependency on the app’s internal dispatch system, neutralizing the root causes of platform delays.
+                </p>
+            </div>
+            <div class="solution-canvas">
+                <div class="center-node"><div class="glow-backdrop"></div><img src="booking_card.png" alt="Spot Booking QR Card" class="booking-card-img"></div>
+                <div class="float-wrap fw-1"><div class="floating-card"><h4>Bypass Algorithms <svg class="icon"><use xlink:href="#icon-radar"/></svg></h4><p>Instantly connect with the driver directly in front of you. No more algorithmic roulette.</p></div></div>
+                <div class="float-wrap fw-2"><div class="floating-card"><h4>Zero Wait Time <svg class="icon"><use xlink:href="#icon-fast"/></svg></h4><p>Scan and go. Perfect for high-traffic areas like airports, stations, and malls.</p></div></div>
+                <div class="float-wrap fw-3"><div class="floating-card"><h4><svg class="icon"><use xlink:href="#icon-check"/></svg> Radical Transparency</h4><p>Fares and destinations are established and agreed upon before the trip begins.</p></div></div>
+                <div class="float-wrap fw-4"><div class="floating-card"><h4><svg class="icon"><use xlink:href="#icon-shield"/></svg> Driver Reliability</h4><p>Reduces cancellations and unpredictable behavior by ensuring mutual consent upfront.</p></div></div>
+            </div>
+        </section>
+
+        <section class="section-padding" id="how-it-works" style="background: var(--bg-panel); border-top: 1px solid rgba(255,255,255,0.05); overflow: hidden;">
+            <div class="centered-text">
+                <h2 style="color: var(--text-light);">How Spot Booking Works</h2>
+                <p style="color: var(--text-muted);">A seamless, peer-to-peer connection. Watch the live flow below.</p>
+            </div>
+            
+            <div class="hw-split-layout">
+                
+                <div class="vid-player-wrap" id="vid-player-wrap" onclick="toggleSpotVideo()">
+                    <video id="spotVideo" src="spot_vid.mp4" loop playsinline></video>
+                    
+                    <div class="vid-play-overlay" id="vidPlayBtn">
+                        <svg class="icon" style="width: 36px; height: 36px; margin-left: 4px;"><use xlink:href="#icon-play"/></svg>
+                    </div>
+                    <div class="vid-pause-overlay" id="vidPauseBtn">
+                        <svg class="icon" style="width: 36px; height: 36px;"><use xlink:href="#icon-pause"/></svg>
+                    </div>
+                </div>
+
+                <div class="vid-steps-list" id="vid-steps-list">
+                    
+                    <div class="vid-step" id="vs-1">
+                        <div class="vs-icon-box"><svg class="icon"><use xlink:href="#icon-user"/></svg></div>
+                        <div class="vs-text">
+                            <span class="vs-badge">Step 1</span>
+                            <h4>Approach Driver</h4>
+                            <p>Walk up to any available driver parked at a high-density hub.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="vid-step" id="vs-2">
+                        <div class="vs-icon-box"><svg class="icon"><use xlink:href="#icon-scan"/></svg></div>
+                        <div class="vs-text">
+                            <span class="vs-badge">Step 2</span>
+                            <h4>Scan QR Code</h4>
+                            <p>Simply scan the unique Spot Booking QR code displayed on the vehicle.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="vid-step" id="vs-3">
+                        <div class="vs-icon-box"><svg class="icon"><use xlink:href="#icon-flag"/></svg></div>
+                        <div class="vs-text">
+                            <span class="vs-badge">Step 3</span>
+                            <h4>Select Destination</h4>
+                            <p>Input your exact drop-off location directly into your phone interface.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="vid-step" id="vs-4">
+                        <div class="vs-icon-box"><svg class="icon"><use xlink:href="#icon-bell"/></svg></div>
+                        <div class="vs-text">
+                            <span class="vs-badge">Step 4</span>
+                            <h4>Send Request</h4>
+                            <p>Hit send to bypass the system and establish a direct connection.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="vid-step driver-step" id="vs-driver">
+                        <div class="vs-icon-box"><svg class="icon"><use xlink:href="#icon-wheel"/></svg></div>
+                        <div class="vs-text">
+                            <span class="vs-badge">Driver</span>
+                            <h4>Driver Confirmation</h4>
+                            <p>The driver receives the direct notification and taps to confirm instantly.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="vid-step" id="vs-5">
+                        <div class="vs-icon-box"><svg class="icon"><use xlink:href="#icon-play"/></svg></div>
+                        <div class="vs-text">
+                            <span class="vs-badge">Step 5</span>
+                            <h4>The Ride Starts</h4>
+                            <p>The fare is locked, the map updates, and you are immediately on your way.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding" style="background: var(--bg-dark);">
+            <div class="centered-text">
+                <h2 style="color: var(--text-light);">The Anatomy of Demand</h2>
+                <p style="color: var(--text-muted);">Ride demand is not uniformly distributed across cities. It clusters around specific physical nodes.</p>
+            </div>
+            <div class="db-container">
+                <div class="db-top-row pain-card" style="margin: 0; padding: 3rem 2rem;">
+                    <div class="db-dynamics-info">
+                        <h3 style="color: var(--accent); font-size: 1.3rem; margin-bottom: 1.5rem; letter-spacing: 0.05em;">MARKET DYNAMICS</h3>
+                        <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 1.5rem;">Ride demand is not evenly distributed; it primarily originates from two distinct geographic profiles:</p>
+                        <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 1rem;">
+                            <li style="background: rgba(0, 230, 118, 0.05); padding: 1rem; border-left: 3px solid var(--primary); border-radius: 0 8px 8px 0;"><strong style="color: var(--primary); display: block; margin-bottom: 5px;">Common Locations (High-Density Hubs)</strong><span style="color: var(--text-muted); font-size: 0.95rem;">Malls, bus stops, parks, colleges, airports, metro stations, and railway stations.</span></li>
+                            <li style="background: rgba(255, 0, 170, 0.05); padding: 1rem; border-left: 3px solid var(--accent-driver); border-radius: 0 8px 8px 0;"><strong style="color: var(--accent-driver); display: block; margin-bottom: 5px;">Isolated Locations (Distributed Nodes)</strong><span style="color: var(--text-muted); font-size: 0.95rem;">Apartments, colonies, houses, and private hostels.</span></li>
+                        </ul>
+                    </div>
+                    <div class="db-stats-panel">
+                        <div class="db-stat-row"><div class="db-stat-num">75%</div><div class="db-stat-text">of rides either start or end at a <span style="color: var(--primary);">High-Density Hub</span>.</div></div>
+                        <div class="db-stat-row" style="margin-bottom: 0;"><div class="db-stat-num">50%</div><div class="db-stat-text">of rides explicitly <span style="color: var(--primary);">START</span> from a High-Density Hub.</div></div>
+                    </div>
+                </div>
+
+                <div class="db-mid-row">
+                    <div class="db-cycle-wrapper pain-card" style="margin: 0; padding: 2rem;">
+                        <h3 style="color: var(--text-light); text-align: center; margin-bottom: 2rem; font-size: 1.2rem; letter-spacing: 0.05em;">TYPES OF RIDES</h3>
+                        <div class="cycle-graphic">
+                            <div class="quadrant top-left"><span class="q-label">COMMON → COMMON</span><span class="q-pct">25%</span></div>
+                            <div class="quadrant top-right"><span class="q-label">COMMON → ISOLATED</span><span class="q-pct">25%</span></div>
+                            <div class="quadrant bottom-right"><span class="q-label">ISOLATED → ISOLATED</span><span class="q-pct">25%</span></div>
+                            <div class="quadrant bottom-left"><span class="q-label">ISOLATED → COMMON</span><span class="q-pct">25%</span></div>
+                            <div class="cycle-center"><span>C | I</span><span>I | C</span></div>
+                        </div>
+                    </div>
+                    <div class="db-ultimate-box pain-card" style="margin: 0; padding: 2rem;">
+                        <h4 style="color: var(--primary); font-size: 1.3rem; margin-bottom: 2rem; text-align: center; letter-spacing: 0.05em;">SPOT BOOKING: THE ULTIMATE SOLUTION</h4>
+                        <div class="db-ub-content">
+                            <div class="db-ub-phone"><img src="booking_card.png" alt="QR Card"><span>QR CARD</span></div>
+                            <div class="db-ub-grid">
+                                <div class="db-ub-item"><h5><svg class="icon"><use xlink:href="#icon-fast"/></svg> FAST</h5><p>Instant ride start, no waiting.</p></div>
+                                <div class="db-ub-item"><h5><svg class="icon"><use xlink:href="#icon-check"/></svg> TRANSPARENCY</h5><p>Clear, agreed-upon fares established upfront.</p></div>
+                                <div class="db-ub-item"><h5 style="grid-column: 1 / -1;"><svg class="icon"><use xlink:href="#icon-settings"/></svg> REMOVES DEPENDENCY</h5><p style="grid-column: 1 / -1;">Bypasses the app's internal dispatch system entirely.</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="db-bottom-row">
+                    <h3 style="color: var(--text-light); text-align: center; margin-bottom: 1rem; font-size: 1.3rem; letter-spacing: 0.05em;">VISUAL EVIDENCE: A MARKET OF VISIBLE SUPPLY</h3>
+                    <div class="image-gallery">
+                        <div class="location-card"><img src="HYD.png" alt="Autos waiting outside AMB Mall, Hyderabad"><div class="location-overlay">AMB Mall, Hyderabad<span><svg class="icon"><use xlink:href="#icon-car"/></svg> Multiple autos ready for immediate hire.</span></div></div>
+                        <div class="location-card"><img src="MUM.png" alt="Cabs waiting outside R City Mall, Mumbai"><div class="location-overlay">R City Mall, Mumbai<span><svg class="icon"><use xlink:href="#icon-car"/></svg> Approachable taxis visible and ready.</span></div></div>
+                        <div class="location-card"><img src="DEL.png" alt="Vehicles waiting outside Delhi Cantt Metro"><div class="location-overlay">Delhi Cantt Metro<span><svg class="icon"><use xlink:href="#icon-car"/></svg> Immediate vehicle availability.</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-padding" id="impact" style="background: var(--bg-panel); border-top: 1px solid rgba(255,255,255,0.05);">
+            <div class="centered-text">
+                <h2 style="color: var(--text-light);">The Ultimate Impact</h2>
+                <p style="color: var(--text-muted);">Transforming the ride-hailing experience across all stakeholders through disciplined, instant connections.</p>
+            </div>
+            <div class="impact-container">
+                <div class="impact-grid">
+                    <div class="impact-card">
+                        <h3 style="color: var(--primary);"><svg class="icon"><use xlink:href="#icon-user"/></svg> For Customers</h3>
+                        <p>Users receive a fast, reliable, and predictable ride experience. The significant reduction in waiting time—from potentially 45+ minutes down to under 5 minutes—improves convenience and eliminates frustration.</p>
+                        <p>Riders also benefit from transparent pricing, consistent ride initiation, and the absolute elimination of driver cancellations. Spot Booking brings discipline into the rider-driver interaction by standardizing the immediate booking process.</p>
+                        <div class="impact-stats">
+                            <div class="impact-stat"><span style="color:var(--primary);">50m <span style="display:inline; color:var(--text-muted); font-size:1.2rem;">→</span> 5m</span> Wait Time Reduction</div>
+                            <div class="impact-stat"><span style="color:var(--primary);">0%</span> Driver Cancellations</div>
+                        </div>
+                    </div>
+                    <div class="impact-card">
+                        <h3 style="color: var(--accent-driver);"><svg class="icon"><use xlink:href="#icon-wheel"/></svg> For Drivers</h3>
+                        <p>Drivers stand to benefit immensely. Because rides are initiated exactly where they are stationed, pickup distances are reduced to absolute zero, entirely eliminating fuel wastage and dead mileage.</p>
+                        <p>If a driver converts just 50% of their daily rides to Spot Booking, they save 45 to 60 minutes previously lost to pickup transit, allowing for 1 or 2 extra completed rides per day. It guarantees ride initiation, increases hourly earnings, and reduces operational stress by replacing biased algorithms with true autonomy.</p>
+                        <div class="impact-stats">
+                            <div class="impact-stat" style="border-color: rgba(255, 0, 170, 0.1);"><span style="color:var(--accent-driver);">0 km</span> Pickup Distance</div>
+                            <div class="impact-stat" style="border-color: rgba(255, 0, 170, 0.1);"><span style="color:var(--accent-driver);">+1 to 2</span> Extra Rides / Day</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="platform-banner">
+                    <h3><svg class="icon" style="width: 32px; height: 32px;"><use xlink:href="#icon-layers"/></svg> For Platforms</h3>
+                    <p>Discover how the Spot Booking model eliminates operational overhead, drives massive geographic volume, and radically transforms platform economics.</p>
+                    <button class="platform-btn" onclick="switchPage('page-estimator')">Explore Platform Benefits</button>
+                </div>
+            </div>
+        </section>
+        
+    </div>
+
+    <div id="page-prompt" class="page-view">
+        <section class="section-padding" style="min-height: 100vh; background: var(--bg-dark);">
+            <div class="centered-text">
+                <h2 style="color: var(--text-light); font-size: clamp(2rem, 4vw, 3rem); line-height: 1.2;">AI Analysis Prompt</h2>
+                <p style="color: var(--text-muted); margin-top: 1rem; margin-bottom: 2rem;">Click this button to copy the prompt to use in chat platforms (ChatGPT, Gemini, Copilot) to get a deep understanding and in-depth analysis of the Spot Booking model.</p>
+                <button id="copyPromptBtn" class="btn-calc" onclick="copyPrompt()" style="max-width: 300px; margin: 0 auto; display: block;">Copy Prompt</button>
+            </div>
+            
+            <div class="nav-container">
+                <div class="prompt-box" id="promptText">Context: I am proposing and analyzing a new ride-hailing business model called "Spot Booking" designed specifically for the Indian market to eliminate friction, wait times, and algorithmic inefficiencies. I would like you to understand the idea, the solution, and how it works, and provide an in-depth analysis.
+
+The Problem:
+Traditional ride-hailing systems are at a breaking point. The gap between rider expectations and driver reality in India is widening rapidly. Surging driver cancellations (rose to 82% in 2025) and escalating wait times (experienced by 53% of users) are symptoms of a structural collapse. The current model is failing under a bloated 14-step digital loop (opening app, entering locations, searching, algorithm pinging, driver accepting, tracking, hunting for each other, and sharing OTP) which causes severe delays.
+
+Pain Points - Customers:
+1. Extended Wait Times: Users wait anywhere from 11 to 45 minutes to secure a ride.
+2. Stress & Helplessness: The system's unreliability means users cannot depend on the app during critical emergencies.
+3. The Proximity Paradox: Users cannot directly hire an empty vehicle parked right in front of them because the algorithm acts as a mandatory middleman.
+
+Pain Points - Drivers:
+1. Diminishing Returns: Biased algorithms balance network earnings rather than rewarding individual efficiency.
+2. Platform Moonlighting: Drivers juggle multiple apps, rejecting incoming requests to survive.
+3. Uncompensated "Dry Runs": Drivers waste significant time and fuel traveling to pickup locations with no earnings in return (dead mileage).
+
+Market Dynamics:
+Ride demand generally clusters around two types of geographic nodes: High-Density Hubs (Common locations: Malls, transit stations, tech parks, airports) and Distributed Nodes (Isolated locations: Apartments, houses). 
+Data estimation shows 75% of rides either start or end at a High-Density Hub, and 50% explicitly START from them. At these common locations, dozens of vehicles are visible and approachable, yet users are forced into digital queues.
+
+The Solution (Spot Booking):
+Spot Booking provides a physical card integrated with a QR code placed on the vehicle. Users instantly scan and book a ride directly with the driver in front of them. This elegant solution completely removes the dependency on the app’s internal dispatch system.
+1. Bypasses Algorithms: Connects directly with the driver.
+2. Zero Wait Time: Scan and go.
+3. Radical Transparency: Fares and destinations are agreed upon before the trip begins.
+4. Driver Reliability: Ensures mutual consent upfront, reducing cancellations.
+
+How it Works:
+Step 1: Approach Driver - Walk up to any available driver parked at a high-density hub.
+Step 2: Scan QR - Scan the unique Spot Booking QR code on the vehicle.
+Step 3: Destination - Input drop-off location into your phone.
+Step 4: Send Request - Hit send to establish a direct connection.
+Step 5: Driver Accepts - Driver gets instant ping and taps to confirm.
+Step 6: Ride Starts - Fare is locked, map updates, and ride begins immediately.
+
+The Impact:
+For Customers: Waiting time reduces from 50m to 5m. 0% driver cancellations. Fast, reliable, and transparent experience.
+For Drivers: 0km pickup distance. Saves 45-60 mins a day (allowing 1-2 extra rides). Eliminates fuel wastage on dry runs. Increases hourly earnings and autonomy.
+For Platforms: Cuts the digital dispatch process from 14 microservice steps to 6, reducing API/Server operational costs by 20% to 30%. It also reclaims lost revenue by capturing users who previously abandoned the app due to high wait times.
+
+Prompt Goal:
+Please act as an expert business analyst and product strategist. Analyze this Spot Booking model. Evaluate its unit economics, scalability, potential challenges, and suggest go-to-market strategies for implementing this in dense urban hubs.</div>
+            </div>
+        </section>
+    </div>
+
+    <div id="page-estimator" class="page-view">
+        <section class="section-padding" style="min-height: 100vh; background: var(--bg-dark);">
+            
+            <div class="centered-text">
+                <span class="tagline" style="color: var(--accent); background: rgba(0, 242, 254, 0.1);">Platform Economics</span>
+                <h2 style="color: var(--text-light); font-size: clamp(2rem, 4vw, 3rem); line-height: 1.2; margin-top: 1rem;">Unlocking Massive Scale<br>Through Efficiency</h2>
+                <p style="color: var(--text-muted); margin-top: 1rem;">Spot booking fundamentally alters the unit economics of a ride-hailing platform by slashing digital overhead and capturing previously lost physical demand.</p>
+            </div>
+
+            <div class="est-grid">
+                
+                <div class="est-benefits">
+                    <div class="est-card">
+                        <h4><svg class="icon"><use xlink:href="#icon-server"/></svg> Drastic OPEX Reduction</h4>
+                        <p>Traditional ride-hailing relies on a heavy, continuous tech stack. Microservices for Maps APIs, live GPS feeds, real-time routing, dynamic fare computation, and complex scouting algorithms constantly drain resources.</p>
+                        <div class="est-highlight">
+                            <span>₹3 to ₹5</span>
+                            <p>Average computational cost per single digital ride.</p>
+                        </div>
+                        <p style="margin-top: 1.5rem;">Spot Booking streamlines the bloated 14-step digital hunt into a highly efficient 6-step handshake. By bypassing massive API calls and server runtimes, platforms can slash operational costs by a minimum of <strong>20% to 30%</strong>—delivering pure bottom-line savings.</p>
+                    </div>
+
+                    <div class="est-card">
+                        <h4><svg class="icon" style="color: var(--primary);"><use xlink:href="#icon-trending"/></svg> Reclaiming Lost Revenue</h4>
+                        <p>Beyond cost savings, Spot Booking actively reclaims lost revenue. By offering instant, zero-wait ride fulfillment, platforms can capture the massive segment of users who currently abandon apps for alternative transport due to high wait times.</p>
+                        <p style="margin-top: 1rem;">As system reliability increases through instant spot matching, your active user base scales naturally, directly accelerating gross revenue.</p>
+                    </div>
+                </div>
+
+                <div class="est-form-card">
+                    <h3>Impact Projections</h3>
+                    <p>Enter your platform's metrics to project savings and growth.</p>
+                    
+                    <form id="estimator-form" onsubmit="calculateEstimator(event)">
+                        <div class="form-group">
+                            <label>Monthly Rides (Volume)</label>
+                            <input type="number" id="inp-rides" placeholder="e.g., 5000000" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; justify-content: space-between; align-items: flex-end;">
+                                Avg Revenue per Ride (₹)
+                                <span style="color: var(--accent); font-size: 0.75rem; font-weight: normal; text-shadow: 0 0 5px rgba(0, 242, 254, 0.6);">(without driver earnings)</span>
+                            </label>
+                            <input type="number" step="0.001" id="inp-rev" placeholder="e.g., 15" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Avg Cost per Ride (₹)</label>
+                            <input type="number" step="0.001" id="inp-cost" placeholder="e.g., 14" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estimated Monthly Growth Rate (%)</label>
+                            <input type="number" step="0.001" id="inp-growth" placeholder="e.g., 5" required>
+                        </div>
+                        
+                        <button type="submit" class="btn-calc">Calculate Impact</button>
+                        
+                        <div class="privacy-note">
+                            <svg class="icon"><use xlink:href="#icon-lock"/></svg>
+                            Privacy Note: All calculations are performed locally. No data is stored.
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="results-container" id="results-section">
+                
+                <div class="centered-text" style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--text-light); font-size: 2.2rem;">12-Month Projection Comparison</h3>
+                </div>
+
+                <div class="compare-grid">
+                    
+                    <div class="model-col">
+                        <div class="chart-header">
+                            <h4 style="color: var(--accent);">Current Operational Model</h4>
+                        </div>
+                        <div class="chart-wrapper">
+                            <div class="chart-canvas-wrap"><canvas id="chartCurrent"></canvas></div>
+                        </div>
+                        <div class="table-box">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Revenue</th>
+                                        <th>Profit/Loss</th>
+                                        <th>Cum. Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-current-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="model-col">
+                        <div class="chart-header">
+                            <h4 style="color: var(--primary);">Spot Booking Model</h4>
+                            <div class="slider-controls">
+                                <label>Spot Booking Adoption:</label>
+                                <input type="range" id="sb-slider" min="1" max="100" step="1" value="5" oninput="syncSlider('range')">
+                                <div>
+                                    <input type="number" id="sb-input" min="1" max="100" step="1" value="5" oninput="syncSlider('number')">
+                                    <span style="color: var(--primary); font-weight: bold; margin-left: 2px;">%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chart-wrapper" style="border-color: rgba(0, 230, 118, 0.3);">
+                            <div class="chart-canvas-wrap"><canvas id="chartSpot"></canvas></div>
+                        </div>
+                        <div class="table-box table-spot" style="border-color: rgba(0, 230, 118, 0.3);">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Month</th>
+                                        <th>Revenue</th>
+                                        <th>Profit/Loss</th>
+                                        <th>Cum. Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-spot-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="totals-grid">
+                    <div class="t-metric"><span>Total Rides (12M)</span><div id="tot-c-rides">0</div></div>
+                    <div class="t-diff" id="diff-rides">+0%</div>
+                    <div class="t-metric"><span>Total Rides (12M)</span><div id="tot-s-rides" style="color: var(--primary);">0</div></div>
+
+                    <div class="t-metric"><span>Total Revenue</span><div id="tot-c-rev" style="color: var(--accent);">₹0</div></div>
+                    <div class="t-diff" id="diff-rev">+0%</div>
+                    <div class="t-metric"><span>Total Revenue</span><div id="tot-s-rev" style="color: var(--primary);">₹0</div></div>
+
+                    <div class="t-metric"><span>Total Profit</span><div id="tot-c-prof" style="color: var(--accent-orange);">₹0</div></div>
+                    <div class="t-diff" id="diff-prof">+0%</div>
+                    <div class="t-metric"><span>Total Profit</span><div id="tot-s-prof" style="color: var(--primary);">₹0</div></div>
+                </div>
+
+                <div class="grand-summary">
+                    <div class="gs-card">
+                        <h5>Final Additional Rides</h5>
+                        <div id="gs-add-rides">0</div>
+                    </div>
+                    <div class="gs-card" style="border-color: rgba(0, 242, 254, 0.5);">
+                        <h5>Final Additional Revenue</h5>
+                        <div id="gs-add-rev" style="color: var(--accent);">₹0</div>
+                    </div>
+                    <div class="gs-card" style="border-color: rgba(255, 0, 170, 0.5);">
+                        <h5>Final Additional Profit</h5>
+                        <div id="gs-add-prof" style="color: var(--accent-driver);">₹0</div>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+    </div>
+
+    <div id="page-contact" class="page-view">
+        <section class="section-padding space-earth-bg" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+            
+            <div class="contact-layout">
+                
+                <div class="contact-block">
+                    <span class="contact-badge">Phase 1</span>
+                    <h2 style="color: var(--text-light); font-size: clamp(2rem, 4vw, 3rem); margin: 1rem 0; font-weight: 800;">Let's Build The Future</h2>
+                    <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin: 0 auto; max-width: 700px;">
+                        This is Phase 1 of the Spot Booking initiative. I am highly passionate about this vision and am happy to have a conversation or answer any queries you might have regarding this idea.
+                    </p>
+                </div>
+
+                <div class="contact-block">
+                    <h3 style="color: var(--text-light); text-align: left; font-size: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">About Me</h3>
+                    
+                    <div class="about-grid">
+                        <div class="about-left">
+                            <img src="Abhi_I.png" alt="Ramavath Abhi Naik" class="profile-img">
+                            <h3 style="color: var(--text-light); font-size: 1.5rem; margin: 0; font-weight: 700;">Ramavath Abhi Naik</h3>
+                        </div>
+                        
+                        <div class="about-right">
+                            <div class="edu-card-row">
+                                <div class="edu-icon-circle">
+                                    <img src="IIM.png" alt="IIM Visakhapatnam">
+                                </div>
+                                <div>
+                                    <h5 style="color: var(--text-light); margin: 0 0 5px 0; font-size: 1.1rem;">MBA</h5>
+                                    <p style="color: var(--text-muted); margin: 0; font-size: 0.95rem;">IIM Visakhapatnam</p>
+                                </div>
+                            </div>
+                            <div class="edu-card-row">
+                                <div class="edu-icon-circle">
+                                    <img src="IIT.png" alt="IIT Bhilai">
+                                </div>
+                                <div>
+                                    <h5 style="color: var(--text-light); margin: 0 0 5px 0; font-size: 1.1rem;">B.Tech - CSE</h5>
+                                    <p style="color: var(--text-muted); margin: 0; font-size: 0.95rem;">IIT Bhilai</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="contact-links" style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <a href="mailto:ramavathabhinaik4@gmail.com" class="contact-btn">
+                            <svg class="icon"><use xlink:href="#icon-mail"/></svg> Email Me
+                        </a>
+                        <a href="https://www.linkedin.com/in/ramavath-abhi-naik-248ba5202" target="_blank" rel="noopener" class="contact-btn">
+                            <svg class="icon"><use xlink:href="#icon-linkedin"/></svg> LinkedIn
+                        </a>
+                    </div>
+                </div>
+
+                <div class="contact-block">
+                    <span class="tagline" style="color: var(--accent-driver); background: rgba(255, 0, 170, 0.1); border: 1px solid rgba(255, 0, 170, 0.3);">Coming Soon</span>
+                    <h3 style="color: var(--text-light); margin: 1rem 0 0.5rem; font-size: 1.4rem;">Future Phases & Consulting</h3>
+                    <p style="color: var(--text-muted); font-size: 1rem; margin: 0; max-width: 700px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                        Other phases of this project are currently in development. You can also consult me directly for your business needs, operational transformations, and further product improvements.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Spot Booking Technologies. Empowering India's Mobility.</p>
+    </footer>
+
+    <script>
+        // --- SPA Page Routing Logic ---
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-view').forEach(page => { page.classList.remove('active-page'); });
+            document.querySelectorAll('.nav-link').forEach(link => { link.classList.remove('active'); });
+            document.getElementById(pageId).classList.add('active-page');
+            const targetLink = document.querySelector(`.nav-link[data-target="${pageId}"]`);
+            if(targetLink) targetLink.classList.add('active');
+            window.scrollTo(0, 0);
+
+            const menuToggle = document.getElementById('mobile-menu');
+            const navLinks = document.getElementById('nav-links');
+            if (menuToggle.classList.contains('is-active')) {
+                menuToggle.classList.remove('is-active');
+                navLinks.classList.remove('active-menu');
+            }
+        }
+
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                switchPage(link.getAttribute('data-target'));
+            });
+        });
+
+        const menuToggle = document.getElementById('mobile-menu');
+        const navLinksContainer = document.getElementById('nav-links');
+
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('is-active');
+            navLinksContainer.classList.toggle('active-menu');
+        });
+
+        // --- Prompt Page Copy Logic ---
+        function copyPrompt() {
+            const promptText = document.getElementById('promptText').innerText;
+            navigator.clipboard.writeText(promptText).then(() => {
+                const btn = document.getElementById('copyPromptBtn');
+                btn.innerText = 'Copied!';
+                btn.style.background = '#ffffff';
+                btn.style.color = '#000';
+                
+                setTimeout(() => {
+                    btn.innerText = 'Copy Prompt';
+                    btn.style.background = 'var(--primary)';
+                }, 2500);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        }
+
+        // --- Deep Dive Broken Loop Timeline Logic ---
+        const btnStartTop = document.getElementById('btn-start-top');
+        const btnStartInside = document.getElementById('btn-start');
+        const btnViewDriver = document.getElementById('btn-view-driver');
+        const loader = document.getElementById('sys-loader');
+        const sysWrapper = document.getElementById('system-wrapper');
+        let isAutoFlowActive = false;
+
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        function setBoxActive(elementId) {
+            const el = document.getElementById(elementId);
+            if(el) {
+                document.querySelectorAll('.t-box.active, .d-box.active, .obs-box.active').forEach(box => { box.classList.remove('active'); box.classList.add('completed'); });
+                if (!el.classList.contains('d-box') && el.id !== 'step-sys') {
+                    el.classList.remove('completed', 'flown-up'); el.classList.add('active'); sysWrapper.classList.remove('active-wrapper');
+                    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
+                } else {
+                    document.querySelectorAll('.system-wrapper > div').forEach(box => { if(box.classList.contains('completed') && box.id !== 'step-sys') { box.classList.add('flown-up'); } });
+                    el.classList.remove('flown-up', 'completed'); el.classList.add('active'); sysWrapper.classList.add('active-wrapper');
+                    setTimeout(() => sysWrapper.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
+                }
+            }
+        }
+
+        function resetCarousel() {
+            document.querySelectorAll('.system-wrapper .d-box').forEach(box => { box.classList.remove('active', 'flown-up', 'completed'); });
+            const sys = document.getElementById('step-sys'); sys.classList.remove('active', 'flown-up'); sys.classList.add('completed');
+            sysWrapper.classList.remove('active-wrapper'); btnViewDriver.style.display = 'block';
+        }
+
+        async function playDriverSteps() {
+            for(let i=1; i<=4; i++) { setBoxActive(`step-d${i}`); await sleep(5000); }
+            resetCarousel();
+        }
+
+        async function animateLine(lineId) {
+            const line = document.getElementById(lineId);
+            if(line) { line.style.width = '100%'; await sleep(800); }
+        }
+
+        if(btnViewDriver) {
+            btnViewDriver.addEventListener('click', async (e) => {
+                if(!isAutoFlowActive && document.body.classList.contains('interactive')) {
+                    e.stopPropagation(); btnViewDriver.style.display = 'none'; document.body.classList.remove('interactive'); 
+                    await playDriverSteps(); document.body.classList.add('interactive');
+                }
+            });
+        }
+
+        async function startFlowSequence() {
+            isAutoFlowActive = true; document.body.classList.remove('interactive'); 
+            if(btnStartInside) btnStartInside.style.display = 'none'; 
+            if(btnStartTop) btnStartTop.style.display = 'none'; 
+            
+            document.getElementById('step-r1').removeAttribute('style'); setBoxActive('step-r1'); await animateLine('line-r1');
+            for(let i=2; i<=4; i++) { setBoxActive(`step-r${i}`); await sleep(5000); await animateLine(`line-r${i}`); }
+            setBoxActive('step-r5'); await sleep(5000); await animateLine('line-r5');
+            setBoxActive('step-sys'); loader.style.display = 'block'; await sleep(1000); btnViewDriver.style.display = 'block';
+
+            const userClickedView = await new Promise(resolve => {
+                let autoTimer = setTimeout(() => resolve(false), 25000); 
+                btnViewDriver.addEventListener('click', () => { clearTimeout(autoTimer); resolve(true); }, { once: true });
+            });
+
+            btnViewDriver.style.display = 'none'; loader.style.display = 'none';
+            if (userClickedView) { await playDriverSteps(); } else {
+                document.getElementById('step-sys').classList.remove('active'); document.getElementById('step-sys').classList.add('completed'); sysWrapper.classList.remove('active-wrapper');
+            }
+            setTimeout(() => sysWrapper.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }), 50);
+            await animateLine('line-sys-to-r6');
+            for(let i=6; i<=10; i++) { setBoxActive(`step-r${i}`); await sleep(5000); if (i < 10) await animateLine(`line-r${i}`); }
+            await animateLine('line-r11'); setBoxActive('step-obs');
+            
+            isAutoFlowActive = false; document.body.classList.add('interactive'); btnViewDriver.style.display = 'block'; 
+            if(btnStartTop) btnStartTop.style.display = 'inline-block';
+        }
+
+        if(btnStartInside) btnStartInside.addEventListener('click', startFlowSequence);
+        if(btnStartTop) btnStartTop.addEventListener('click', startFlowSequence);
+
+        // --- Pain Points Accordion Logic ---
+        document.querySelectorAll('.reason-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.toggle('active');
+                const content = this.nextElementSibling;
+                const span = this.querySelector('span');
+                if (content.classList.contains('show')) { content.classList.remove('show'); span.textContent = 'Reason >'; } 
+                else { content.classList.add('show'); span.textContent = 'Reason v'; }
+            });
+        });
+
+        // --- Solution Floating Cards Random Highlight Logic ---
+        const floatingCards = document.querySelectorAll('.floating-card');
+        if(floatingCards.length > 0) {
+            let lastIdx = -1;
+            setInterval(() => {
+                floatingCards.forEach(card => card.classList.remove('active-highlight'));
+                let randIdx; do { randIdx = Math.floor(Math.random() * floatingCards.length); } while(randIdx === lastIdx);
+                floatingCards[randIdx].classList.add('active-highlight'); lastIdx = randIdx;
+            }, 2500); 
+        }
+
+        // --- NEW VIDEO PLAYER LOGIC ---
+        const spotVideo = document.getElementById('spotVideo');
+        const vidPlayerWrap = document.getElementById('vid-player-wrap');
+        const vidPlayBtn = document.getElementById('vidPlayBtn');
+        const vSteps = ['vs-1', 'vs-2', 'vs-3', 'vs-4', 'vs-driver', 'vs-5'];
+        let currentActiveVidId = null;
+
+        function toggleSpotVideo() {
+            if(!spotVideo) return;
+            if(spotVideo.paused) {
+                spotVideo.play();
+                vidPlayerWrap.classList.add('is-playing');
+            } else {
+                spotVideo.pause();
+                vidPlayerWrap.classList.remove('is-playing');
+            }
+        }
+
+        if(spotVideo) {
+            spotVideo.addEventListener('timeupdate', () => {
+                let t = spotVideo.currentTime;
+                
+                let newActiveId = null;
+                if (t >= 0 && t < 5.25) newActiveId = 'vs-1';
+                else if (t >= 5.25 && t < 16.99) newActiveId = 'vs-2';
+                else if (t >= 16.99 && t < 27.99) newActiveId = 'vs-3';
+                else if (t >= 27.99 && t < 34.70) newActiveId = 'vs-4';
+                else if (t >= 34.70 && t < 41.99) newActiveId = 'vs-driver';
+                else if (t >= 41.99) newActiveId = 'vs-5';
+
+                if (newActiveId && currentActiveVidId !== newActiveId) {
+                    vSteps.forEach(id => {
+                        let el = document.getElementById(id);
+                        if(el) el.classList.remove('active');
+                    });
+                    let activeEl = document.getElementById(newActiveId);
+                    if(activeEl) {
+                        activeEl.classList.add('active');
+                        // Scroll vertically to align center
+                        const listContainer = document.getElementById('vid-steps-list');
+                        const scrollPos = activeEl.offsetTop - listContainer.offsetTop - (listContainer.clientHeight / 2) + (activeEl.clientHeight / 2);
+                        listContainer.scrollTo({ top: scrollPos, behavior: 'smooth' });
+                    }
+                    currentActiveVidId = newActiveId;
+                }
+            });
+        }
+
+        // ==========================================
+        //        ESTIMATOR ALGORITHM & CHARTS       
+        // ==========================================
+        let chartCurrentInst = null;
+        let chartSpotInst = null;
+        
+        let _initRides = 0, _avgRev = 0, _avgCost = 0, _baseGrowth = 0;
+        let _randFluctuations = [];
+
+        const formatMoney = (val) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+        const formatNum = (val) => new Intl.NumberFormat('en-IN').format(val);
+
+        const _0xCalc = (function() {
+            const _k1 = 0x177 / 0xf4240; 
+            const _k2 = 0x8cf / 0x2710;  
+            return function(_r, _c, _v, _p) {
+                let _xr = _r * (0x1 + (_p * _k1)); 
+                let _tc = (_xr * (0x64 - _p) / 0x64 * _c) + (_xr * (_p / 0x64) * _c * (0x1 - _k2)); 
+                let _tr = _xr * _v;
+                return { r: _xr, c: _tc, v: _tr, p: _tr - _tc };
+            }
+        })();
+
+        const _0xRevCalc = (function() {
+            const _x1 = 0x5a; 
+            const _x2 = 0x14; 
+            return function(_val) { return _val * (_x1 + _x2); };
+        })();
+
+        function calculateEstimator(e) {
+            e.preventDefault();
+            _initRides = parseFloat(document.getElementById('inp-rides').value);
+            _avgRev = parseFloat(document.getElementById('inp-rev').value);
+            _avgCost = parseFloat(document.getElementById('inp-cost').value);
+            _baseGrowth = parseFloat(document.getElementById('inp-growth').value) / 100;
+            
+            if(isNaN(_initRides) || isNaN(_avgRev) || isNaN(_avgCost) || isNaN(_baseGrowth)) {
+                alert("Please fill all fields with valid numbers."); return;
+            }
+
+            _randFluctuations = [];
+            for(let i=0; i<12; i++) { _randFluctuations.push((Math.random() * 0.16) - 0.06); }
+
+            const chartSec = document.getElementById('results-section');
+            chartSec.classList.add('show');
+            setTimeout(() => chartSec.scrollIntoView({ behavior: 'smooth' }), 100);
+
+            executeProjections();
+        }
+
+        function syncSlider(source) {
+            const slider = document.getElementById('sb-slider');
+            const input = document.getElementById('sb-input');
+            if(source === 'range') { input.value = slider.value; } 
+            else {
+                let val = parseInt(input.value);
+                if(val < 0) val = 0; if(val > 100) val = 100;
+                input.value = val; slider.value = val;
+            }
+            if(_randFluctuations.length > 0) { executeProjections(); }
+        }
+
+        function executeProjections() {
+            const sbPercent = parseFloat(document.getElementById('sb-slider').value);
+            let labels = [];
+            
+            let cRides = [], cRev = [], cProfit = [];
+            let cTotalRides = 0, cTotalProfit = 0, cTotalRev = 0;
+            let prevRides_c = _initRides;
+
+            let sRides = [], sRev = [], sProfit = [];
+            let sTotalRides = 0, sTotalProfit = 0, sTotalRev = 0;
+
+            let htmlCurrent = '', htmlSpot = '';
+
+            for(let i=0; i<12; i++) {
+                labels.push('M' + (i+1));
+                
+                let baseRides = prevRides_c * (1 + _baseGrowth);
+                let currentMonthRides = baseRides * (1 + _randFluctuations[i]);
+                let curRev = currentMonthRides * _avgRev;
+                let curCost = currentMonthRides * _avgCost;
+                let curProfit = curRev - curCost;
+                
+                cRides.push(Math.round(currentMonthRides));
+                cRev.push(Math.round(curRev));
+                cProfit.push(Math.round(curProfit));
+                
+                cTotalRides += currentMonthRides;
+                cTotalProfit += curProfit;
+                cTotalRev += curRev;
+
+                htmlCurrent += `<tr><td>M${i+1}</td><td>${formatMoney(curRev)}</td><td style="color:${curProfit >= 0 ? 'var(--primary)' : 'var(--accent-orange)'}">${formatMoney(curProfit)}</td><td>${formatMoney(cTotalProfit)}</td></tr>`;
+
+                let spotData = _0xCalc(currentMonthRides, _avgCost, _avgRev, sbPercent);
+                
+                sRides.push(Math.round(spotData.r));
+                sRev.push(Math.round(spotData.v));
+                sProfit.push(Math.round(spotData.p));
+                
+                sTotalRides += spotData.r;
+                sTotalProfit += spotData.p;
+                sTotalRev += spotData.v;
+
+                htmlSpot += `<tr><td>M${i+1}</td><td>${formatMoney(spotData.v)}</td><td style="color:${spotData.p >= 0 ? 'var(--primary)' : 'var(--accent-driver)'}">${formatMoney(spotData.p)}</td><td>${formatMoney(sTotalProfit)}</td></tr>`;
+
+                prevRides_c = currentMonthRides;
+            }
+
+            document.getElementById('table-current-body').innerHTML = htmlCurrent;
+            document.getElementById('table-spot-body').innerHTML = htmlSpot;
+
+            document.getElementById('tot-c-rides').innerText = formatNum(Math.round(cTotalRides));
+            document.getElementById('tot-c-rev').innerText = formatMoney(Math.round(cTotalRev));
+            document.getElementById('tot-c-prof').innerText = formatMoney(Math.round(cTotalProfit));
+
+            document.getElementById('tot-s-rides').innerText = formatNum(Math.round(sTotalRides));
+            document.getElementById('tot-s-rev').innerText = formatMoney(Math.round(sTotalRev));
+            document.getElementById('tot-s-prof').innerText = formatMoney(Math.round(sTotalProfit));
+
+            const diffRides = cTotalRides > 0 ? ((sTotalRides - cTotalRides) / cTotalRides) * 100 : 0;
+            const diffRev = cTotalRev > 0 ? ((sTotalRev - cTotalRev) / cTotalRev) * 100 : 0;
+            const diffProf = cTotalProfit > 0 ? ((sTotalProfit - cTotalProfit) / Math.abs(cTotalProfit)) * 100 : 0;
+
+            document.getElementById('diff-rides').innerText = (diffRides >= 0 ? '+' : '') + diffRides.toFixed(2) + '%';
+            document.getElementById('diff-rev').innerText = (diffRev >= 0 ? '+' : '') + diffRev.toFixed(2) + '%';
+            document.getElementById('diff-prof').innerText = (diffProf >= 0 ? '+' : '') + diffProf.toFixed(2) + '%';
+
+            let addRides = sTotalRides - cTotalRides;
+            document.getElementById('gs-add-rides').innerText = '+' + formatNum(Math.round(addRides));
+            document.getElementById('gs-add-rev').innerText = '+' + formatMoney(Math.round(_0xRevCalc(addRides)));
+            document.getElementById('gs-add-prof').innerText = '+' + formatMoney(Math.round(sTotalProfit - cTotalProfit));
+
+            renderChart('chartCurrent', 'chartCurrentInst', labels, cRides, cRev, cProfit, '#00f2fe', '#ff3d00');
+            renderChart('chartSpot', 'chartSpotInst', labels, sRides, sRev, sProfit, '#00e676', '#00c853');
+        }
+
+        function renderChart(canvasId, instanceName, labels, ridesData, revData, profitData, color1, color2) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            if(window[instanceName]) { window[instanceName].destroy(); }
+
+            window[instanceName] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Rides', data: ridesData, borderColor: '#8b949e', backgroundColor: 'rgba(139, 148, 158, 0.1)', borderWidth: 2, borderDash: [5, 5], yAxisID: 'yRides', tension: 0.4 },
+                        { label: 'Revenue', data: revData, borderColor: color1, backgroundColor: 'transparent', borderWidth: 3, yAxisID: 'yCurrency', tension: 0.4 },
+                        { label: 'Profit', data: profitData, borderColor: color2, backgroundColor: color2 === '#ff00aa' ? 'rgba(255, 0, 170, 0.1)' : 'rgba(0, 230, 118, 0.1)', borderWidth: 3, fill: true, yAxisID: 'yCurrency', tension: 0.4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#ffffff', boxWidth: 12 } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        if(context.dataset.yAxisID === 'yCurrency') { label += formatMoney(context.parsed.y); } 
+                                        else { label += formatNum(context.parsed.y); }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e', font: {size: 10} } },
+                        yRides: { type: 'linear', display: true, position: 'left', title: { display: false }, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8b949e', font: {size: 10}, callback: function(value) { if(value>=1000000) return (value/1000000).toFixed(1)+'M'; if(value>=1000) return (value/1000).toFixed(1)+'K'; return value; } } },
+                        yCurrency: { type: 'linear', display: true, position: 'right', title: { display: false }, grid: { drawOnChartArea: false }, ticks: { color: color1, font: {size: 10}, callback: function(value) { if(value >= 10000000) return '₹' + (value/10000000).toFixed(1) + 'Cr'; if(value >= 100000) return '₹' + (value/100000).toFixed(1) + 'L'; return '₹' + formatNum(value); }} }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
